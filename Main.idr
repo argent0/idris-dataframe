@@ -13,6 +13,10 @@ names : {ns : Vect k String} -> RList ts ns -> Vect k String
 names Nil = []
 names (Cons _ n rs) = (n :: names rs)
 
+index : (i : Fin k) -> RList ts ns -> index i ts
+index FZ (Cons v _ _) = v
+index (FS f) (Cons _ _ vs) = index f vs
+
 -- Examples
 
 myList : RList [String, Integer] ["Name", "Age"]
