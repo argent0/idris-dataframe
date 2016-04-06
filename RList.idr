@@ -2,7 +2,9 @@ module RList
 
 import Data.Vect
 import Data.HVect
+import ZipperFunctions
 
+%access public export
 %default total
 
 provedElemIndex : {xs : Vect k a} -> Elem x xs -> Fin k
@@ -42,8 +44,7 @@ updateAt : RList ts ns -> (i : Fin n) -> (index i ts -> t) ->
 updateAt (v :: vs) FZ f  = f v :: vs
 updateAt (v :: vs) (FS j) f  = v :: updateAt vs j f
 
-updateAtLabel : 
-                {ns : Vect k String} ->
+updateAtLabel : {ns : Vect k String} ->
                 RList ts ns -> (n : String) ->
                 {auto p : Elem n ns} ->
                 {default n nn : String} ->
@@ -61,6 +62,17 @@ preppendLabel : {ns : Vect k String} ->
               (v : nt) -> RList (nt :: ts) (n :: ns)
 
 preppendLabel vs n v = RList.(::) v vs
+
+zipWith : {ats : Vect k Type} ->
+          {bts : Vect k Type} ->
+          {tts : Vect k Type} ->
+          ZipperFunctions ats bts tts  ->
+          RList ats ns ->
+          RList bts ns ->
+          RList tts ns
+
+zipWith Nil Nil Nil = Nil
+zipWith (z :: zs) (a :: as) (b :: bs) = z a b :: zipWith zs as bs
 
 -- List Examples
 
