@@ -60,4 +60,18 @@ Show (DataFrame k [] []) where
 (Show (DataFrame k ts ns), Show t) => Show (DataFrame k (t :: ts) (n :: ns)) where
    show (c :: cs) = (show c) ++ " :: " ++ (show cs)
 
+-- Convenience functions
+
+||| If the given dataframe has the desired number of rows, return a dataframe
+||| with that number of rows, otherwise, return Nothing
+||| @nrows the required number of rows
+||| @df the tested data frame
+exactRowNumber : {k : Nat} -> -- expected at runtim
+   (nrows : Nat) -> 
+   (df : DataFrame k ts ns) -> Maybe (DataFrame nrows ts ns)
+
+exactRowNumber {k} nrows ds with (decEq k nrows)
+   exactRowNumber {k = k} k ds | (Yes Refl) = Just ds
+   exactRowNumber {k = k} nrows ds | (No contra) = Nothing
+
 -- vim: expandtab
