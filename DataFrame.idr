@@ -9,7 +9,7 @@ import Data.Vect
 %default total
 
 data DataFrame : Nat -> Vect n Type -> Vect n String -> Type where
-  Nil : DataFrame nRow [] []
+  Nil : DataFrame nRow [] [] --A DataFrame with no columns but maybe rows
   (::) : Vect nRow t ->
        {n : String} ->
         DataFrame nRow ts ns -> DataFrame nRow (t :: ts) (n :: ns)
