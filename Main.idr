@@ -51,18 +51,16 @@ parseDelimRow delim (parsed :: pfs) str =
             Just result =>
                (parseDelimRow delim pfs tailFields) >>= \parsedRest =>
                pure (result :: parsedRest)
-            Nothing => Left $ "Parse error"
+            Nothing => Left $ "Parse error at: " ++ str
       else Left "Empty line to parse."
 
-sampleParser : ParserFunctions [String, Double] ["Name", "Age"]
-sampleParser = Just :: parseDouble :: Nil
 
 parsedDelimRows : {ns : Vect n String} ->
-             {ts : Vect n Type} ->
-             Char ->
-             ParserFunctions ts ns ->
-             Vect k String ->
-             Either String (DataFrame k ts ns)
+                  {ts : Vect n Type} ->
+                  Char ->
+                  ParserFunctions ts ns ->
+                  Vect k String ->
+                  Either String (DataFrame k ts ns)
 parsedDelimRows _ _ Nil = Right empty
 parsedDelimRows delim parsers (s :: ss) = do
    parsedRow <- parseDelimRow delim parsers s
@@ -77,17 +75,35 @@ parseCsv : {ns : Vect n String} ->
 
 parseCsv = parsedDelimRows ','
 
+sampleParser : ParserFunctions [String, Double] ["Name", "Age"]
+sampleParser = Just :: parseDouble :: Nil
+
+irisParser : ParserFunctions [Double, Double, Double, Double] ["Sepal.Length","Sepal.Width","Petal.Length","Petal.Width"]
+irisParser = parseDouble :: parseDouble :: parseDouble :: parseDouble :: Nil
+
+vect : List a -> (k ** Vect k a)
+vect Nil = (Z ** [])
+vect (x :: xs) =
+   let
+      (k ** rest) = vect xs
+   in (S k ** x :: rest)
+
 main : IO ()
 main =
-   do
-     y <- run foo
-     case y of
-          Left str => putStrLn $ "Error: " ++ str
-          Right str => putStrLn $ show str
+   do 
+      runResult <- run fileLinesResult
+      case runResult of
+         Left str => putStrLn $ "Error: " ++ str
+         Right str =>
+            let
+               (_ ** vstr) = vect (filter ((>0) . length) str)
+            in case parseCsv irisParser vstr of
+               Left errStr => putStrLn errStr
+               Right df => putStrLn $ show df
    where
-     foo : Eff (Either String (List String)) [FILE_IO(), STDIO]
-     foo = do
-       x <- readLines "iris.csv"
-       pure x -- ?hole2
+     fileLinesResult : Eff (Either String (List String)) [FILE_IO(), STDIO]
+     fileLinesResult = do
+       fileLines <- readLines "iris.headless.csv"
+       pure fileLines -- ?hole2
 
 -- vim: expandtab

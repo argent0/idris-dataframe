@@ -52,4 +52,12 @@ sampleDF' = rcons ["John", 25] $
             rcons ["Mike", 30] $
             rcons ["Trevor", 35] empty
 
+-- Instances
+
+Show (DataFrame k [] []) where
+   show _ = "Nil"
+
+(Show (DataFrame k ts ns), Show t) => Show (DataFrame k (t :: ts) (n :: ns)) where
+   show (c :: cs) = (show c) ++ " :: " ++ (show cs)
+
 -- vim: expandtab
