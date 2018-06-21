@@ -1,0 +1,10 @@
+package DataFrame
+
+pkgs = effects, contrib
+
+modules =
+   DataFrame
+ , DataFrame.DataFrame
+ , DataFrame.Parse
+ , DataFrame.RList
+ , DataFrame.ZipperFunctions

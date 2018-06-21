@@ -1,11 +1,10 @@
 module Parse
 
-import RList
-import DataFrame
+import DataFrame.RList
+import DataFrame.DataFrame
 
-import Effects
-import Effect.File
-import Effect.StdIO
+import Control.ST.File
+import Control.ST
 
 import Data.Vect
 
@@ -16,23 +15,35 @@ data ParserFunctions : Vect k Type -> Vect k String -> Type where
   Nil : ParserFunctions [] []
   (::) : {n : String} -> (String -> Maybe t) -> ParserFunctions ts ns -> ParserFunctions (t :: ts) (n :: ns)
 
-partial -- Because the file could be infinite
-readLines : String -> Eff (Either String (List String)) [FILE_IO ()]
-readLines path = do
-      openResult <- open path Read
-      case openResult of
-         True =>
-            (fileLines >>= \fileLinesResult => close >>= \_ => (pure $ Right fileLinesResult))
-         False => pure $ Left "Could not open file!"
-   where
-   partial
-   fileLines : Eff (List String) [FILE_IO (OpenFile Read)]
-   fileLines =
-         if !(eof)
-            then (pure [])
-            else do
-              pure (!(readLine) :: !(fileLines))
 
+partial
+getLines : File m => 
+         (fh : Var) -> 
+         Either FileError (List String) -> 
+         ST m (Either FileError (List String)) [fh ::: FileHandleI {m = m} Read]
+getLines file strings = do
+  case strings of
+    Left err => pure (Left err)
+    Right accum => do
+      if !(eof file) then
+        pure (Right accum)
+      else do
+        line <- readLine file
+        case line of 
+          Left err => pure (Left err)
+          Right str => getLines file (Right (str :: accum))
+      
+                                                                                                   
+partial -- Because the file could be infinite
+readLines : File m => String -> ST m (Either FileError (List String)) []
+readLines path = do
+  openResult <- open path Read
+  case openResult of
+    Left x => pure (Left x)
+    Right fh => do
+     lines <- getLines fh (Right [])
+     close fh
+     pure lines
 
 delimSpan : Char -> String -> (String, String)
 delimSpan delim str = 
@@ -89,18 +100,19 @@ vect (x :: xs) =
    in (S k ** x :: rest)
 
 partial
-loadCsv : {ts : Vect n Type} ->
+loadCsv : (File m) => 
+          {ts : Vect n Type} ->
           {ns : Vect n String} ->
           String ->
           (nrows : Nat) ->
           ParserFunctions ts ns ->
-          IO (Provider (DataFrame nrows ts ns))
+          ST m (Provider (DataFrame nrows ts ns)) []
 
 loadCsv filepath nrows parsers =
    do 
-      runResult <- run fileLinesResult
+      runResult <- fileLinesResult
       case runResult of
-         Left str => pure $ Error str
+         Left err => pure $ Error (show err)
          Right str =>
             let
                (n ** vstr) = vect (filter ((>0) . length) str)
@@ -111,7 +123,7 @@ loadCsv filepath nrows parsers =
                                 Nothing => pure $ Error "Missing rows!"
    where
      partial
-     fileLinesResult : Eff (Either String (List String)) [FILE_IO(), STDIO]
+     fileLinesResult : (File m) => ST m (Either FileError (List String)) []
      fileLinesResult = do
        fileLines <- readLines filepath
        pure fileLines

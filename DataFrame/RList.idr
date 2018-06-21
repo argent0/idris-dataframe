@@ -2,7 +2,7 @@ module RList
 
 import Data.Vect
 import Data.HVect
-import ZipperFunctions
+import DataFrame.ZipperFunctions
 
 %access public export
 %default total
