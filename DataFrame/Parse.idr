@@ -32,8 +32,8 @@ getLines file strings = do
         case line of 
           Left err => pure (Left err)
           Right str => getLines file (Right (str :: accum))
-      
-                                                                                                   
+
+
 partial -- Because the file could be infinite
 readLines : File m => String -> ST m (Either FileError (List String)) []
 readLines path = do

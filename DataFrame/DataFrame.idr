@@ -1,51 +1,59 @@
 module DataFrame
 
+import DataFrame.Vector
 import DataFrame.RList
 import DataFrame.ZipperFunctions
 
 import Data.Vect
 
 %access public export
-%default total
 
 data DataFrame : Nat -> Vect n Type -> Vect n String -> Type where
   Nil : DataFrame nRow [] [] --A DataFrame with no columns but maybe rows
-  (::) : Vect nRow t ->
+  (::) : Vector nRow t ->
        {n : String} ->
         DataFrame nRow ts ns -> DataFrame nRow (t :: ts) (n :: ns)
-   
--- A DataFrame with no rows but maybe columns
+
+||| A DataFrame with no rows but maybe columns
+total
 empty : {ts : Vect k Type} ->
         {ns : Vect k String} -> DataFrame Z ts ns
 empty {ts= Nil} {ns= Nil} = Nil
-empty {ts= (t :: ts) } {ns = (n :: ns)} = Nil :: empty {ts} {ns}
+empty {ts= (t :: ts) } {ns = (n :: ns)} = Vector.empty :: empty {ts} {ns}
 
--- Concatenate rows
+||| Cons a row to a DataFrame
+total
 rcons : {ts : Vect k Type} ->
         {nRow : Nat} ->
-        RList ts ns -> 
+        RList ts ns ->
         DataFrame nRow ts ns ->
         DataFrame (S nRow) ts ns
 
 rcons {nRow} Nil Nil = the (DataFrame (S nRow) [] []) Nil
-rcons (a :: as) (v :: vs) = (a :: v) :: rcons as vs
+rcons (a :: as) (v :: vs) = (Vector.cons a v) :: rcons as vs
 
-col : DataFrame nRow ts ns -> (i : Fin k) -> Vect nRow (index i ts)
+||| Returns a comlun by index
+col : DataFrame nRow ts ns -> (i : Fin k) -> Vector nRow (index i ts)
 col (v ::  _) FZ  = v
 col (_ :: vs) (FS f) = col vs f
 
+||| Returns a comlun by label
 label : DataFrame nRow ts ns -> (n : String) ->
-        {auto p : Elem n ns} -> Vect nRow (labelType n ns ts p)
+        {auto p : Elem n ns} -> Vector nRow (labelType n ns ts p)
 
 label ( v :: _ ) _ {p = Here} = v
 label ( _ :: vs) n {p = There p'} = label vs n {p = p'}
 
+||| Returns a row by index
 row : DataFrame nRow ts ns -> Fin nRow -> RList ts ns
 row Nil _ = Nil
-row (v :: vs) k = index k v :: row vs k
+row (v :: vs) k = Vector.index k v :: row vs k
 
 sampleDF : DataFrame 3 [String, Double] ["Name", "Age"]
-sampleDF = [["John", "Mike", "Trevor"], [25, 30, 35]]
+sampleDF = [sNames, sAges]
+  where
+    sNames = Vector.fromVect ["John", "Mike", "Trevor"]
+    sAges = Vector.fromVect [25, 30, 35]
 
 sampleDF' : DataFrame 3 [String, Double] ["Name", "Age"]
 sampleDF' = rcons ["John", 25] $
